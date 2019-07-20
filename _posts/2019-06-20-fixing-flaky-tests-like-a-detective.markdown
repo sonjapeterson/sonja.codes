@@ -98,13 +98,16 @@ click_on "Submit Post"
 expect(Post.count).to eq 1
 ```
 
-Here’s what the happy path for this test looks like. First, you click the button, then in the browser that click triggers an ajax request, the rails server processes it, the browser gets the response and updates the UI, and then your test code checks the db and finds the post. 
+Here’s what the happy path for this test looks like:
+1. The test code sends a message to the browser to trigger a click event on the button
+2. In the browser, that click triggers an ajax request to the Rails server
+3. The rails server processes that request and sends the response back to the browser.
+4. The browser gets the response and updates the UI.
+5. The test code checks the db and finds the newly created post. 
 
-The order of events in the browser and server timeline is pretty predictable, provided you’re not optimistically updating the UI before the blog post is created in the database - you should avoid optimistic updates if you can since they can also create a flaky user experience. But the events in the test code timeline can definitely happen at a different place in relation to the others… 
+But, that happy path isn't the only order events in the test. Since we’re not explicitly waiting on anything that would signal that the request to create the post has finished, our test code can move right along from #1, tirggering the click, to #4, checking the database, before steps 2, 3 and 4 have finished.
 
-Since we’re not explicitly waiting on anything that would signal that the request to create the post has finished, our test code can move right along to the “check DB” part of the test, and find nothing there.
-
-The fix here is relatively simple - we just need to make sure that we wait until the request has finished before we try to check the database. We can do this by adding one of Capybara’s waiting finders, like have_content, which will look for something on the page and retry until it shows up.
+The fix here is relatively simple - we just need to make sure that we wait until the request has finished before we try to check the database. We can do this by adding one of Capybara’s waiting finders, like `have_content`, which will look for something on the page and retry until it shows up.
 
 ``` ruby
 click_on "Submit Post"
@@ -113,8 +116,6 @@ expect(page).to have_content("Post Created")
 
 expect(Post.count).to eq 1
 ```
-
-So with that code implemented, the have_content will always ensure that the test code can’t move forward until the request has finished and the UI has been updated as result.
 
 That’s a relatively simple async flake. But they can get a lot more complicated. Let's take a look at a trickier one.
 
@@ -127,14 +128,16 @@ click_on "Sort"
 expect_reversed_alphabetical_order
 ```
 
-So here we have a test which goes to a page with a list of books, clicks on a “Sort” button, waits for the books to show up in that sorted order, then clicks again to reverse that order, and waits for the order to show up again.
+Let's say that `expect_alphabetical_order` and `expect_reversed_alphabetical_order` are custom helpers we've implemented that use Capybara's waiting finders under the hood to wait until the books show up in that particular order. So this seems like it should work: we're waiting between each action and even if there's a delay, Capybara should just retry until the correct order shows up. But then this starts to flake.
 
-`expect_alphabetical_order` and `expect_reversed_alphabetical_order` are using Capybara's waiting finders to wait until the books show up in that particular order, so it seems like everything is good - we're waiting between each action and even if there's a delay, Capybara should just retry until the correct order shows up. But then this starts to flake.
+How does this happen? Consider the situation where we land on the books page, and the books just so happen to already be in the correct order. Then: 
+1. We click on 'Sort' 
+2. `expect_alphabetical_order` passes immediately
+3. We move on to click on 'Sort' again, but _before_ the page has even started reloading with the books from the first click on "Sort". 
 
-How is that possible? It has to do with events taking place in a different order than we expect.
-Consider the situation where we land on the books page, and the books just so happen to already be in the correct order. We click on 'Sort' and then `expect_alphabetical_order` passes immediately, before the page has even started reloading with the books in the proper order, and so we move on to the next click on Sort. This results in basically a "doubleclick" effect, rather than the two separate page reloads we want, so the page just reloads once with the books in the ascending alphabetical order. And so we’ll never get to that reversed alphabetical order state
+This results in basically a "doubleclick" effect, rather than the two separate page reloads we want, so the page just reloads once with the books in the ascending alphabetical order, and we’ll never get to that reversed alphabetical order state.
 
-The solution here would be to wait on something besides the fact that the books are in the correct order to make sure that the first sort request has succeeded - maybe something shows up in the UI to indicate the sort order that wouldn’t be there until that request finishes. Then we can safely move on to the next step. An example of the "fixed" code:
+The solution here would be to wait on something besides the fact that the books are in the correct order to make sure that the first request has completed before we try to trigger the second one. Here's an example of how the fixed test might look:
 
 ``` ruby
 click_on "Sort"
@@ -148,9 +151,8 @@ expect_reversed_alphabetical_order
 
 #### Diagnosing async flakes
 
-So if you’re looking at a given flaky test and trying to figure out whether it might fit into the async code category, the first question is - is it a system or feature test (aka, some kind of test that interacts with your app via the browser?). If it is, look for any events in it where we might not be waiting for the results
-
-Also, Capybara’s screenshot saving functionality can be helpful in understanding what state the page ends up in when the test fails. With most capybara drivers, you're able to call `save_screenshot` at any point to save a screenshot of the page, usually both as html and a png. You can also use the [capybara-screenshot](https://github.com/mattheworiordan/capybara-screenshot) gem, which helps you ensure that any time a test fails, a screenshot is saved and taken. 
+* **Is it a system or feature test** (AKA, some kind of test that interacts with your app via the browser?). If it is, look for any events in it where you aren't waiting for the result before moving on.
+* **Capture some screenshots**: With most Capybara drivers, you're able to call `save_screenshot` at any point to save a screenshot of the page, usually both as html and a png. You can also use the [capybara-screenshot](https://github.com/mattheworiordan/capybara-screenshot) gem, which helps you ensure that any time a test fails, a screenshot is saved. 
 
 #### Preventing async flakes
 
@@ -163,50 +165,58 @@ Also, Capybara’s screenshot saving functionality can be helpful in understandi
 
 Order dependent tests are those that can pass or fail depending on which tests ran before them. Usually, this is caused by some sort of state leaking between tests - so when the state another test creates is present (or not present) it can cause the flaky test to fail.
 
-Order dependency can sneak into your test suite in several different ways. There’s database state, which needs to be reset between each test, global and class variables in your app, and browser state, for system & feature tests that use a browser.
+Order dependency can sneak into your test suite in several different ways, including: 
+  * database state 
+  * global and class variables in your app
+  * browser state, for system & feature tests that use a browser.
 
-Typically the biggest issue is database state, so let's talk about that a little more in depth.
+
+#### Order dependency caused by database state
 
 When you're writing tests, each test should start with a "clean" DB - that might not mean with a fully empty database, but if anything is created, updated or deleted in the database DURING a single test, it should be put back the way it was at the beginning. This is important because otherwise, those changes to the database could have unexpected impacts on later tests, or create dependencies between tests so you can't remove or re-order tests without risking cascading failures.
 
-There are several different ways to handle clearing your database state. Wrapping your test in a transaction and rolling it back after the test is generally the fastest way to clear your database. This is the default for Rails tests, but in the past you couldn’t use it with Capybara tests because the test code and test server didn’t share a database connection. 
+Database cleaning in Rails should "just work" and often does, especially if you're able to use Rails' basic, built in transactional cleaning. But there are so many different ways you might have your Rails test suite configured, and it _is_ possible to do it in such a way that certain gotchas are introduced. So it's important to know how your database cleaner works, when it runs, and if there's anything it's leaving behind - especially if you're dealing with a flaky test that seems to be order dependent.
 
-So what would happen is the test server would create some data in the database, but in its own connection & therefore own transaction, which the thread running your test code wouldn’t be able to see.
+There are several different ways to handle clearing your database state: 
+
+##### Wrapping your test in a transaction and rolling it back after the test
+
+This is generally the fastest way to clear your database, and it's  the default for Rails tests, but in the past you couldn’t use it with Capybara tests because the test code and test server didn’t share a database connection. 
 
 Rails 5 system tests addressed that issue by allowing the test code and test server to have shared access to a database connection during the test, so they are both looking at the same transaction
 
-However this approach still requires you to be careful about a couple of things. Transactions might have slightly different behavior than you see in your actual app - for example, if you have any after_commit hooks set up on your models, they won’t be run.
+This approach still requires you to be careful about a couple of things. Transactions might have slightly different behavior than you see in your actual app - for example, if you have any after_commit hooks set up on your models, they won’t be run.
 
-So because of those limitations and the fact that in the past transactions couldn’t be used to clean up capybara, a lot of Rails test suites use the database_cleaner gem to clean with either truncation - truncating all tables touched in the  test - or deletion, which uses DELETE FROM. 
+##### Using truncation of tables or deletion of records touched during the test
 
-Which strategy is faster for you will depend on the structure of the data you create in each test, so it’s worth trying both. Both deleteion and truncation are generally be slower than transactional, but since they let you run the app just like it normally would — without extra transactions wrapping each test — they’re a little more realistic and that can make them easier to work with. 
+Because of the limitations of transactional cleanup, many Rails test suites use the [database_cleaner](https://github.com/DatabaseCleaner/database_cleaner) gem to clean with either truncation - truncating all tables touched in the test - or deletion, which uses DELETE FROM to delete all records created in a test. 
+
+Both deletion and truncation are generally be slower than transactional, but since they let you run the app just like it normally would — without extra transactions wrapping each test — they’re a little more realistic and that can make them easier to work with. 
 
 If you use database_cleaner, you should also make sure you’re running it in an append_after block, not an after each block- this ensures it runs after Capybara’s cleanup, which includes waiting for any lingering ajax requests that could affect the state of the database and need to be cleaned up.
 
-So why do I tell you all of this? The thing about database cleaning is it should "just work" and often does, especially if you're able to use Rails' basic, built in transactional cleaning. But there are so many different ways you might have your Rails app configured, and it _is_ possible to do it in such a way that certain gotchas are introduced. So it's important to know how your database cleaner works, when it runs, and if there's anything it's leaving behind - especially if you're dealing with a flaky test that seems to be order dependent.
-
 ### Order dependency examples
 
-Let's look at an example. Let's say we're using database cleaner with the truncation strategy - maybe we started doing that back before Rails 5 let us share a DB connection and it stuck, maybe we like that it doesn't introduce any weirdness around transactions & after commit hooks - whatever.
+Let's say we're using `database_cleaner` with the truncation strategy:
 
 ``` ruby
 DatabaseCleaner.strategy = :truncation
 ```
 
-But we notice that this is slow, so someone coming along to optimize the test suite. They notice we're creating book genres in almost all of the tests, so they decide to do that before the entire suite runs instead, and then exclude those from database cleaner, with the built in option for that:
+But we notice that this is slow, so someone comes along to optimize the test suite. They notice we're creating book genres in almost all of the tests, so they decide to do that before the entire suite runs instead using a `before(:all)` block, and then exclude those from being cleaned up with `database_cleaner`, with the built in option for that:
 
 ``` ruby
 DatabaseCleaner.strategy = :truncation, {:except => %w[book_genres]}
 ```
 
-This saves us some time, but introduces a gap in our cleaning. If we make any kind of modification to BookGenre, since we're using truncation to clean the database instead of transactions, that update won't be undone. And this could potentially affect later tests, and show up as an order dependent flake. 
+This saves us some time, but introduces a gap in our cleaning. If we make any kind of modification to BookGenre, that update won't be undone, because we'll never truncate those tables. And this could potentially affect later tests, and show up as an order dependent flake. 
 
 ``` ruby
 book_genre = BookGenre.find_by(name: "Mystery")
- book_genre.update!(status: "deleted")
+book_genre.update!(status: "deleted")
 ```
 
-To be clear, I'm not picking on DatabaseCleaner here - I'm just giving an example of how a minor configuration change could allow you to create more flakes, and why it's important to therefore have a good understanding of how cleaning is actually working and the trade-offs you introduce depending on how you do it.
+To be clear, I'm not picking on `database_cleaner` here - I'm just giving an example of how a minor configuration change could allow you to create more flakes, and why it's important to therefore have a good understanding of how cleaning is actually working and the trade-offs you introduce depending on how you do it.
 
 ### Other sources of order dependency
 * **The browser**:  since tests run within the same browser, that can contain specific state depending on the test that just run. Capybara works hard to clean this all up before it moves on to the next test, so this usually should be taken care of for you, but it's likely possible that depending on your configuration you could have some issues, so it's good to be aware of that as a possibility.
