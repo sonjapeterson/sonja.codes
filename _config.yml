@@ -9,7 +9,7 @@
 title: Sonja Peterson
 email: sonja.peterson@gmail.com
 description: > # this means to ignore newlines until "baseurl:"
-  just your average programming blog, now with more gifs!
+  Software Engineer
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "sonjapeterson.github.io" # the base hostname & protocol for your site
 twitter_username: sonjabpeterson

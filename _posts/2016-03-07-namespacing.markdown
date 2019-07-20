@@ -1,5 +1,4 @@
 ---
-layout: post
 title:  "Namespacing Your Rails Models Without Losing Your Mind"
 date:   2016-03-07 23:42:49 -0500
 ---

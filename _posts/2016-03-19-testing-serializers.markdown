@@ -1,5 +1,4 @@
 ---
-layout: post
 title:  "Helpers for Testing Active Model Serializers in Rails with RSpec"
 date:   2016-03-19 6:42:49 -0500
 ---
