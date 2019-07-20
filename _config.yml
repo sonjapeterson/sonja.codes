@@ -26,9 +26,9 @@ linkedin: 'petersonsonja'
 # Navigation
 navigation:
   - text: About
-    url: /about/
+    url: /about
   - text: Blog
-    url: /blog/
+    url: /blog
 
 # Required Plugins
 plugins_dir:
