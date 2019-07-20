@@ -2,6 +2,7 @@
 layout: post
 title:  "Helpers for Testing Active Model Serializers in Rails with RSpec"
 date:   2016-03-19 6:42:49 -0500
+tags: ["Ruby", "Ruby on Rails", "Testing"]
 ---
 
 Lately I've been building an API with Rails using Active Model Serializers. As I was writing my controller tests I realized that I was going to end up repetitively testing my serializers' behavior unless I found a way to test the serializers in isolation. Here's how I did it:

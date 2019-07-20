@@ -2,6 +2,7 @@
 layout: post
 title:  "Building a Rails API with the JSON API Spec [slides]"
 date:   2016-04-13 18:42:49 -0500
+tags: ["Ruby", "Ruby on Rails"]
 ---
 
 Recently I gave my first tech talk at the [Boston Ruby Group](http://bostonrb.org)! I spoke about my experience [building a Rails API according to the JSON API spec](http://bostonrb.org/presentations/building-a-rails-api-with-the-json-api-spec). It was a ton of fun even though I was too nervous about speaking to eat the free pizza :) Here's the slides:

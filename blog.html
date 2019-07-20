@@ -1,0 +1,12 @@
+---
+layout: default
+title: All Posts
+---
+
+<div class="outer fadeInDown delay_025s">
+    <div class="post-feed inner-wide">
+        {% for post in site.posts %}
+            {% include postbox.html %}
+        {% endfor %}
+    </div>
+</div>

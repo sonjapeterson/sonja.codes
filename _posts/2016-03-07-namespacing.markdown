@@ -2,6 +2,7 @@
 layout: post
 title:  "Namespacing Your Rails Models Without Losing Your Mind"
 date:   2016-03-07 23:42:49 -0500
+tags: ["Ruby", "Ruby on Rails"]
 ---
 
 Recently, I was working on a new Rails app for work that I felt had a good potential use case for namespacing. A made up (not perfect) example of the type of situation I was in would be modeling a bunch of different games, which each involved some models that might have similar names--like a ChessMove and PokerMove--but different attributes, relationships and behavior, making them totally separate classes.
