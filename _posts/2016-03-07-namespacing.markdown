@@ -16,75 +16,75 @@ Once I decided to use namespacing, here's the changes I had to make, with some m
 - Create a folder with the name of the namespace and move all of the models to it.
 - Add the module to each model's class definition:
 
-  {% highlight ruby %}
+``` ruby
   module Chess
     class Move < ActiveRecord::Base
       [...]
     end
   end
-  {% endhighlight %}
+```
 
 - Define the appropriate table names for each class--ActiveRecord doesn't consider the module path when creating the table name:
 
-{% highlight ruby %}
+``` ruby
 module Chess
   class Move < ActiveRecord::Base
     self.table_name = "chess_moves"
   end
 end
-{% endhighlight %}
+```
 
 - Update the namespaced model's associations to other namespaced models to remove the prefix and explicitly specify the class_names and foreign keys. You'll have to specify the foreign key involved for BOTH has_many and belongs_to associations.
 
-  {% highlight ruby %}
+``` ruby
   module Chess
     class Move < ActiveRecord::Base
       belongs_to :piece, class_name: Chess::Piece, foreign_key: "chess_piece_id"
     end
   end
-  {% endhighlight %}
+```
 
 - Update your class names everywhere you use them to the namespaced version (Chess::Piece instead of ChessPiece), and update the associations to the new, prefix-less names you've defined.
 
 - Update your ActiveRecord scopes. This is a little confusing. I always forget that `includes` and `references` use the name you've defined for the association (so no namespace prefix), but where clauses involving associations want the real table names. So a query like this before namespacing:
 
-  {% highlight ruby %}
+``` ruby
   class ChessMove < ActiveRecord::Base
     scope :used_pawn, -> { includes(:chess_piece).where(chess_piece: { type: "pawn" }) }
   end
-  {% endhighlight %}
+```
 
   becomes this:
 
-  {% highlight ruby %}
+``` ruby
   module Chess
     class Move < ActiveRecord::Base
       scope :used_pawn, -> { includes(:pieces).where(chess_piece: { type: "pawn" }) }
     end
   end
-  {% endhighlight %}
+```
 
 - If you're using FactoryGirl in your specs, you'll need to set the class option:
 
-{% highlight ruby %}
+``` ruby
 FactoryGirl.define do
   factory :chess_move, class: Chess::Move do
     [...]
   end
 end
-{% endhighlight %}
+```
 
 For namespaced associations in your factories, you'll need to specify the factory explicitly:
 
-{% highlight ruby %}
+``` ruby
 factory :chess_move do
   association :piece, factory: :chess_piece
 end
-{% endhighlight %}
+```
 
 Doing each of these steps for all 7 of my namespaced models seemed fairly verbose and tedious, so I created a NamespacedModel concern to do them automatically. It's pretty ugly, but it does the job:
 
-{% highlight ruby %}
+``` ruby
 module NamespacedModel
   extend ActiveSupport::Concern
 
@@ -112,30 +112,28 @@ module NamespacedModel
   end
 
 end
-{% endhighlight %}
+```
 
 Then in your models you can just do
 
-{% highlight ruby %}
+``` ruby
 module Chess
   class Move
     include NamespacedModel
     namespaced_association(:belongs_to, :piece)
   end
 end
-{% endhighlight %}
+```
 
-You could also have handled the table name situation by making a file like this:
+You could also have handled the table name situation by making a file like this, called `app/models/chess.rb`:
 
->/app/models/chess.rb
-{:.filename}
-{% highlight ruby %}
+``` ruby
 module Chess
   def self.table_name_prefix
     "chess_"
   end
 end
-{% endhighlight %}
+```
 
 But if you have more than one namespace to deal with and you want to also set up namespaced associations, using a concern to do it seems like a more generic and easy solution.
 
@@ -144,4 +142,3 @@ That's (pretty much) it! Make sure all your tests pass, then admire how much nic
 ![#flawless](http://i.giphy.com/zBxaKpZA1tsli.gif)
 
 \*Disclaimer: this examples might show a bad way to model a chess game, since that wasn't the actual domain I was dealing with.
-

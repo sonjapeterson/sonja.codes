@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Fixing Flakey Tests Like a Detective (RailsConf 2019)"
+title:  "Fixing Flaky Tests Like a Detective (RailsConf 2019)"
 date:   2016-04-13 18:42:49 -0500
 tags: ["Ruby", "Ruby on Rails", "Testing"]
 ---
@@ -90,8 +90,8 @@ The reason you’re necessarily dealing with async code and concurrency when you
 
 Let’s look at how this plays out in a simple example. Imagine you have a Capybara test that clicks on a Submit Post button, and then checks that a post was created in the database.
 
-{% highlight ruby %}
-click_on “Submit Post”
+``` ruby
+click_on "Submit Post"
 
 expect(Post.count).to eq 1
-{% endhighlight %}
+```

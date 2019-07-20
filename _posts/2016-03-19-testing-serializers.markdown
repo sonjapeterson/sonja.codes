@@ -10,7 +10,7 @@ Lately I've been building an API with Rails using Active Model Serializers. As I
 - Create `spec/serializers` directory.
 - Create a SerializerSpecHelper in your `spec/support` directory, or wherever you put your spec helpers.
 
-  {% highlight ruby %}
+``` ruby
   module SerializerSpecHelper
     def serialize(obj, opts={})
       serializer_class = opts.delete(:serializer_class) || "#{obj.class.name}Serializer".constantize
@@ -19,21 +19,20 @@ Lately I've been building an API with Rails using Active Model Serializers. As I
       adapter.to_json
     end
   end
-  {% endhighlight %}
+```
 
 - Automatically include this helper in all serializers specs by adding this to your `spec/rails_helper.rb`:
 
-  {% highlight ruby %}
-
+``` ruby
   RSpec.configure do |config|
     # lots of other config code is here
     config.include SerializerSpecHelper, type: :serializer
   end
-  {% endhighlight %}
+```
 
 - Your serializer specs can then look like this:
 
-  {% highlight ruby %}
+``` ruby
   require 'rails_helper'
 
   RSpec.describe CoffeeSerializer, :type => :serializer do
@@ -47,7 +46,7 @@ Lately I've been building an API with Rails using Active Model Serializers. As I
       end
     end
   end
-  {% endhighlight %}
+```
 
 I use the serializer specs to test that my serializers have the right attributes and relationships defined, and particularly to test behavior that's only defined in my serializers. An example might be that my serializer returns a status attribute that masks the true value of status (due to that being sensitive data I don't want to expose to the user) and instead just displays "successful" or "failed", I'd write a test in the serializer spec that "status" returns only successful or failed, to make sure no one changes that behavior unexpectedly.
 
