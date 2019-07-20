@@ -1,11 +1,10 @@
 # Site setings
 name: 'Sonja Peterson'
 description: 'Software Engineer'
-meta_description: 'Sonja Peterson's software engineering blog'
-logo: 'assets/images/logo.png'
-favicon: 'assets/images/favicon.ico'
+meta_description: "Sonja Peterson's software engineering blog"
 baseurl: 
-production_url: http://sonjapeterson.github.io
+production_url: http://sonjapeterson.github.io/
+disqus: 'justgoodthemes'
 cover_image: bc_1.jpg
 # Add your GA Tracking Id
 ga_analytics: 
@@ -16,12 +15,8 @@ author:
   name: 'Sonja Peterson'
   image: 'authorimage.jpg'
   greetings: 'Hi there!'
-  description: "My name is Sonja Person. I'm a full stack software engineer based in the Boston, MA area. It’s nice to meet you."
-
-# Contact form setings
-email: sonja.peterson@gmail.com
-contact_page_description: "Enter your message below to send me an email:"
-thankyou_page_description: "Your message has been successfully sent. We will contact you very soon!"
+  description: "My name is Sonja Peterson. I'm a full stack software engineer based in the Boston, MA area. It's nice to meet you!"
+  bio: "Sonja Peterson is a full stack software engineer based on the Boston, MA area. She enjoys programming in Ruby, Golang, Javascript and Typescript. When she's not programming, you can find her looking for new places to hike and ski around New England." 
 
 # Social links
 twitter: 'SonjaBPeterson'
@@ -32,8 +27,8 @@ linkedin: 'petersonsonja'
 navigation:
   - text: About
     url: /about/
-  - text: Contact Me
-    url: /contact/
+  - text: Blog
+    url: /blog/
 
 # Required Plugins
 plugins_dir:
