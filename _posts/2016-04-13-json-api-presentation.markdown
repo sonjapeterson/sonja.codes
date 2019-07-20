@@ -1,5 +1,5 @@
 ---
-layout: default
+layout: post
 title:  "Building a Rails API with the JSON API Spec [slides]"
 date:   2016-04-13 18:42:49 -0500
 ---

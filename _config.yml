@@ -1,21 +1,58 @@
-# Welcome to Jekyll!
-#
-# This config file is meant for settings that affect your whole blog, values
-# which you are expected to set up once and rarely need to edit after that.
-# For technical reasons, this file is *NOT* reloaded automatically when you use
-# 'jekyll serve'. If you change this file, please restart the server process.
+# Site setings
+name: 'Sonja Peterson'
+description: 'Software Engineer'
+meta_description: 'Sonja Peterson's software engineering blog'
+logo: 'assets/images/logo.png'
+favicon: 'assets/images/favicon.ico'
+baseurl: 
+production_url: http://sonjapeterson.github.io
+cover_image: bc_1.jpg
+# Add your GA Tracking Id
+ga_analytics: 
 
-# Site settings
-title: Sonja Peterson
+
+# Author
+author:
+  name: 'Sonja Peterson'
+  image: 'authorimage.jpg'
+  greetings: 'Hi there!'
+  description: "My name is Sonja Person. I'm a full stack software engineer based in the Boston, MA area. It’s nice to meet you."
+
+# Contact form setings
 email: sonja.peterson@gmail.com
-description: > # this means to ignore newlines until "baseurl:"
-  Software Engineer
-baseurl: "" # the subpath of your site, e.g. /blog
-url: "sonjapeterson.github.io" # the base hostname & protocol for your site
-twitter_username: sonjabpeterson
-github_username:  sonjapeterson
+contact_page_description: "Enter your message below to send me an email:"
+thankyou_page_description: "Your message has been successfully sent. We will contact you very soon!"
 
-# Build settings
+# Social links
+twitter: 'SonjaBPeterson'
+github: 'sonjapeterson'
+linkedin: 'petersonsonja'
+
+# Navigation
+navigation:
+  - text: About
+    url: /about/
+  - text: Contact Me
+    url: /contact/
+
+# Required Plugins
+plugins_dir:
+  - jekyll-paginate
+  - jekyll-tagsgenerator
+  - jekyll-seo-tag
+  - jekyll-sitemap
+
+# Pagination
+paginate: 5
+paginate_path: /page:num/
+
+# Permalinks
+permalink: /:title
+
+# Other
 markdown: kramdown
 
-theme: jekyll-theme-merlot
+# Sass
+sass:
+  sass_dir: _sass
+  style: compressed

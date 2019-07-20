@@ -1,80 +1,90 @@
 <!DOCTYPE html>
-<html lang="{{ site.lang | default: "en-US" }}">
-  <head>
-    <meta charset='utf-8'>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=640">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <link rel="stylesheet" href="{{ '/assets/css/style.css?v=' | append: site.github.build_revision | relative_url }}" media="screen">
-    <link rel="stylesheet" href="{{ '/assets/css/mobile.css' | relative_url }}" media="handheld, only screen and (max-device-width:640px)">
-    <link rel="stylesheet" href="{{ '/assets/css/non-screen.css' | relative_url }}" media="handheld, only screen and (max-device-width:640px)">
-
-    <script src="{{ '/assets/js/modernizr.js' | relative_url }}"></script>
-    <script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
-    <script src="{{ '/assets/js/headsmart.min.js' | relative_url }}"></script>
-    <script>
-      $(document).ready(function () {
-        $('#main_content').headsmart()
-      })
-    </script>
-
-{% seo %}
-  </head>
-
-  <body>
-    <div class="shell">
-
-      <header>
-        <span class="ribbon-outer">
-          <span class="ribbon-inner">
-            <h1>{{ site.title | default: site.github.repository_name }}</h1>
-            <h2>{{ site.description | default: site.github.project_tagline }}</h2>
-          </span>
-          <span class="left-tail"></span>
-          <span class="right-tail"></span>
-        </span>
-      </header>
-
-      <section id="downloads">
-        <span class="inner">
-          <a href="/" class="zip">Blog</a>
-          <a href="/about" class="tgz">About</a>
-        </span>
-      </section>
-
-      <span class="banner-fix"></span>
-
-
-      <section id="main_content">
-        {{ content }}
-      </section>
-
-      <footer>
-        <span class="ribbon-outer">
-          <span class="ribbon-inner">
-            {% if site.github.is_project_page %}
-              <p>this project by <a href="{{ site.github.owner_url }}">{{ site.github.owner_name }}</a> can be found on <a href="{{ site.github.repository_url }}">GitHub</a></p>
-            {% endif %}
-            <p><h2></h2></p>
-          </span>
-          <span class="left-tail"></span>
-          <span class="right-tail"></span>
-        </span>
-        <p>Generated with <a href="https://pages.github.com">GitHub Pages</a> using Merlot</p>
-        <span class="octocat"></span>
-      </footer>
-
-    </div>
-
-    {% if site.google_analytics %}
-      <script>
-        (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-        })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-        ga('create', '{{ site.google_analytics }}', 'auto');
-        ga('send', 'pageview');
-      </script>
+    {% if site.plugins_dir contains 'jekyll-seo-tag' %}
+        {% include head-seo.html %}
+    {% else %}
+        <title>{% if page.title %}{{ page.title | escape }}{% else %}{{ site.name | escape }}{% endif %}</title>
+        <meta name="description" content="{{ page.excerpt | default: site.description | strip_html | normalize_whitespace | truncate: 160 | escape }}">
+        <link rel="canonical" href="{{ page.url | replace:'index.html', '' | absolute_url }}">
     {% endif %}
-  </body>
+
+    <!-- Site Favicon -->
+    <link rel="shortcut icon" href="{{ site.url }}/{{ site.baseurl }}{{ site.favicon }}" type="image/png" />
+
+    <!-- Font Embed Code -->
+    <link href="https://fonts.googleapis.com/css?family=Karla:400,400i,700,700i" rel="stylesheet" />
+
+    <!-- CSS Styles -->
+    <link href="{{ site.baseurl }}/assets/css/style.css" rel="stylesheet">
+
+</head>
+
+{% capture layout %}{% if page.layout %}layout-{{ page.layout }}{% endif %}{% endcapture %}
+
+<body class="{{ layout }}">
+    <div id="page" class="site">
+
+        {% if page.url == "/" %}
+
+        <div class="hero-wrap">
+            {% if site.cover_image %}
+            <div class="hero-wrap-bg" style="background-image: url({{ site.baseurl }}/assets/images/{{ site.cover_image }})"></div>
+            {% endif %}
+            {% include header.html %}
+            <section class="hero outer fadeInDown delay_075s">
+                <div class="inner">
+                    {% include author.html %}
+                </div><!-- .inner -->
+            </section><!-- .hero -->
+        </div><!-- .hero-wrap -->
+
+        {% else %}
+        {% include header.html %}
+        {% endif %}
+
+        {{ content }}
+
+        {% if paginator.total_posts > site.paginate %}
+        {% if page.class == 'tag-template' %}
+        {% include tag-pagination.html %}
+        {% endif %}
+        {% endif %}
+
+        {% if site.mailchimp_url and page.class == 'tag-template' %}
+        {% include newsletter-box.html %}
+        {% endif %}
+
+        <footer id="colophon" class="site-footer outer">
+            <div class="site-footer-inside">
+                {% include social-links.html %}
+                <p class="site-info">
+                    <a href="#">{{ site.name }}</a> &copy; {{ site.time | date: '%Y' }} . Horace theme by
+                    <a target="_blank" href="https://justgoodthemes.com/">JustGoodThemes</a>. <br />
+                    Powered by <a target="_blank" href="https://jekyllrb.com/">Jekyll</a>.
+                </p>
+                <p class="back-to-top">
+                    <a id="top-button" class="top-button" href="#page">
+                        <span class="icon-arrow-up" aria-hidden="true"></span>
+                        <span class="screen-reader-text">Back to top</span>
+                    </a>
+                </p>
+            </div><!-- .site-footer-inside -->
+        </footer><!-- .site-footer -->
+    </div><!-- .site -->
+    <div id="site-overlay" class="site-overlay"></div>
+    {% include sidebar.html %}
+    {% include analytics.html %}
+    <!-- Javascript Assets -->
+    <script src="{{ site.baseurl }}/assets/js/jquery-3.3.1.min.js"></script>
+    <script src="{{ site.baseurl }}/assets/js/plugins.js"></script>
+    <script src="{{ site.baseurl }}/assets/js/custom.js"></script>
+
+</body>
+
 </html>
