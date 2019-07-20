@@ -4,7 +4,7 @@ description: 'Software Engineer'
 meta_description: "Sonja Peterson's software engineering blog"
 baseurl: 
 production_url: http://sonjapeterson.github.io/
-disqus: 'justgoodthemes'
+disqus: 'sonjapeterson'
 cover_image: bc_1.jpg
 # Add your GA Tracking Id
 ga_analytics: 
