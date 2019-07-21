@@ -149,7 +149,7 @@ expect(page).to have_content("Sort: DESC")
 expect_reversed_alphabetical_order
 ```
 
-#### Diagnosing async flakes
+#### Identifying async flakes
 
 * **Is it a system or feature test** (AKA, some kind of test that interacts with your app via the browser?). If it is, look for any events in it where you aren't waiting for the result before moving on.
 * **Capture some screenshots**: With most Capybara drivers, you're able to call `save_screenshot` at any point to save a screenshot of the page, usually both as html and a png. You can also use the [capybara-screenshot](https://github.com/mattheworiordan/capybara-screenshot) gem, which helps you ensure that any time a test fails, a screenshot is saved. 
@@ -163,9 +163,13 @@ expect_reversed_alphabetical_order
 
 ### Suspect #2: Order dependency
 
-Order dependent tests are those that can pass or fail depending on which tests ran before them. Usually, this is caused by some sort of state leaking between tests - so when the state another test creates is present (or not present) it can cause the flaky test to fail.
+**Definition**: Order dependent tests are those that can pass or fail depending on which tests ran before them. 
 
-Order dependency can sneak into your test suite in several different ways, including: 
+Usually, this is caused by some sort of state leaking between tests - so when the state another test creates is present (or not present) it can cause the flaky test to fail.
+
+#### Sources of shared state
+
+Shared state can sneak into your test suite in several different ways, including:
   * database state 
   * global and class variables in your app
   * browser state, for system & feature tests that use a browser.
@@ -177,25 +181,18 @@ When you're writing tests, each test should start with a "clean" DB - that might
 
 Database cleaning in Rails should "just work" and often does, especially if you're able to use Rails' basic, built in transactional cleaning. But there are so many different ways you might have your Rails test suite configured, and it _is_ possible to do it in such a way that certain gotchas are introduced. So it's important to know how your database cleaner works, when it runs, and if there's anything it's leaving behind - especially if you're dealing with a flaky test that seems to be order dependent.
 
-There are several different ways to handle clearing your database state: 
+##### Ways to clear your database state
 
-##### Wrapping your test in a transaction and rolling it back after the test
+* Transactional
+  * Wrapping your test in a transaction & rolling it back afterwards is generally the fastest way to clear your database, and it's the default for Rails tests 
+  * In the past you couldn’t use it with Capybara tests because the test code and test server didn’t share a database connection, but Rails 5 system tests addressed that issue by allowing the test code and test server to have shared access to a database connection during the test
+  * This approach still requires you to be careful about a couple of things. Transactions might have slightly different behavior than you see in your actual app - for example, if you have any after_commit hooks set up on your models, they won’t be run.
+* Truncation or deletion
+  * Because of the limitations of transactional cleanup, many Rails test suites use the [database_cleaner](https://github.com/DatabaseCleaner/database_cleaner) gem to clean with either truncation - truncating all tables touched in the test - or deletion, which uses DELETE FROM to delete all records created in a test. 
+  * Since truncation and deletion let you run the app just like it normally would — without extra transactions wrapping each test — they’re a little more realistic and that can make them easier to work with. 
+  * If you use database_cleaner, you should also make sure you’re running it in an `append_after(:each)` block, not an `after(:each)` block- this ensures it runs after Capybara’s cleanup, which includes waiting for any lingering ajax requests that could affect the state of the database and need to be cleaned up.
 
-This is generally the fastest way to clear your database, and it's  the default for Rails tests, but in the past you couldn’t use it with Capybara tests because the test code and test server didn’t share a database connection. 
-
-Rails 5 system tests addressed that issue by allowing the test code and test server to have shared access to a database connection during the test, so they are both looking at the same transaction
-
-This approach still requires you to be careful about a couple of things. Transactions might have slightly different behavior than you see in your actual app - for example, if you have any after_commit hooks set up on your models, they won’t be run.
-
-##### Using truncation of tables or deletion of records touched during the test
-
-Because of the limitations of transactional cleanup, many Rails test suites use the [database_cleaner](https://github.com/DatabaseCleaner/database_cleaner) gem to clean with either truncation - truncating all tables touched in the test - or deletion, which uses DELETE FROM to delete all records created in a test. 
-
-Both deletion and truncation are generally be slower than transactional, but since they let you run the app just like it normally would — without extra transactions wrapping each test — they’re a little more realistic and that can make them easier to work with. 
-
-If you use database_cleaner, you should also make sure you’re running it in an append_after block, not an after each block- this ensures it runs after Capybara’s cleanup, which includes waiting for any lingering ajax requests that could affect the state of the database and need to be cleaned up.
-
-### Order dependency examples
+#### Order dependency examples
 
 Let's say we're using `database_cleaner` with the truncation strategy:
 
@@ -218,14 +215,181 @@ book_genre.update!(status: "deleted")
 
 To be clear, I'm not picking on `database_cleaner` here - I'm just giving an example of how a minor configuration change could allow you to create more flakes, and why it's important to therefore have a good understanding of how cleaning is actually working and the trade-offs you introduce depending on how you do it.
 
-### Other sources of order dependency
+#### Other sources of order dependency
 * **The browser**:  since tests run within the same browser, that can contain specific state depending on the test that just run. Capybara works hard to clean this all up before it moves on to the next test, so this usually should be taken care of for you, but it's likely possible that depending on your configuration you could have some issues, so it's good to be aware of that as a possibility.
 * **Global/class variables**:  if you modify those, that can persist from one test to the next. Normally Ruby will yell at you if you reassign these, but one area where they can sneak through is if you have a hash and you just change one of the values in it - since that isn't reassigning the entire variable, it won't come up as a warning.
 
-### Identifying order dependency
+#### Identifying order dependency
 * **Try replicating the failure with same set of tests in the same order**:  If you have your test suite configured to run in a random order, you can set the SEED value to recreate the order.
 * **Cross reference each failed occurrence and see if the same tests ran before the failure**: RSpec has a built in bisect tool you can use to help narrow down a set of tests to the ones producing the dependency - however you may find that it runs prohibitively slowly, so sometimes it’s better to look at it manually. Look at each time it failed on CI, cross-reference which test files were run before the failure each time, and see where the overlap is.
 
-### Preventing order dependency
-* **Configure your test suite to run in random order**: otherwise, they’ll only start to appear when you add or remove a certain test. Running in random order is the default in Minitest and is configurable in RSpec
-* **Understand your test setup and teardown process**, and work to close any gaps where shared state to leak through
+#### Preventing order dependency
+* **Configure your test suite to run in random order**: otherwise, they’ll only start to appear when you add or remove a certain test. Running in random order is the default in Minitest and is configurable in RSpec.
+* **Understand your test setup and teardown process**, and work to close any gaps where shared state to leak through.
+
+### Suspect #3: Time
+
+**Definition**: A test that can pass or fail depending on the time of day when it is run.
+
+#### Examples of time-based flakes
+
+Imagine we have this code that runs in a `before(:save)` hook on our Task model. It sets an automatic due date to the next day at the end of the day.
+
+``` ruby
+def set_default_due_date
+   if due_date.nil?
+     self.due_date = Date.tomorrow.end_of_day
+   end
+ end
+```
+
+Then we write this test:
+
+``` ruby
+it "should set a default due date" do
+  task = Task.create
+  expected_due_date = (Date.today + 1).end_of_day
+  expect(task.due_date).to eq expected_due_date
+end
+```
+
+Mysteriously, it starts failing every night around 7 p.m.! The trouble is that we’re using two slightly different ways of calculating tomorrow. `Date.tomorrow` uses the time based on the time zone we set for our Rails app, while `Date.today + 1` will be based on the system time. So if the system time is in UTC and our time in zone is EST, they’ll be five hours apart, and after 7pm they’ll be different days, resulting in the failure.
+
+To fix this, you can update your test to use Date.current instead of Date.today, which will respect time zones. 
+
+``` ruby
+it "should set a default due date" do
+  task = Task.create
+  expected_due_date = (Date.current + 1).end_of_day
+  expect(task.due_date).to eq expected_due_date
+end
+```
+
+You can also use the Timecop gem when you're testing time sensitive logic. This allows you to freeze time to a specific value, so you always know what time your test is running at. 
+
+``` ruby
+it "should set a default due date" do
+  Timecop.freeze(Time.zone.local(2019, 1, 1, 10, 5, 0)) do
+    task = Task.create
+    expected_due_date = Time.zone.local(2019, 1, 2, 23, 59, 59)    
+    expect(task.due_date).to eq expected_due_date
+  end
+end
+```
+
+#### Identifying time-based flakes
+
+* Are there any references to date or time in the test or the code under test?
+* Has every observed failure happened before or after a certain hour of day?
+* See if you can reliably replicate failure using Timecop
+
+A strategy you can apply globally to surface time-based flakes is to wraps every test in `Timecop.travel`, mocking the time to a different random time of day on each run, that’s printed out before the test runs. If you're using RSpec, you can accomplish this with a global `around(:each)` block set up in your spec_helper. This will surface failures that would normally only happen after normal work hours during work hours, so you can fix them instead of running into them only when you’re on call and desperately trying to deploy a hot fix at 11pm.
+
+#### Fixing time-based flakes
+
+If the current time could affect the test, freeze it to a specific value with Timecop, or test it with a passed in, static value.
+
+### Suspect #4: Unordered collections
+
+**Definition:** A test that can pass or fail depending on the order of a set of items referenced in it.
+
+#### Example: Unordered Collections
+
+Here's an example where we’re querying for some posts in the database and then comparing them to some posts that we expect (maybe created earlier in the test):
+
+``` ruby
+active_posts = Post.where(state: active)
+
+expect(active_posts).to eq([post1, post2])
+```
+
+The issue with this test is that the database query doesn’t have a specific order. So even though things will often be returned from the database in the same order, there’s no guarantee that will always happen. And when it doesn’t, this test fails.
+
+The fix is to specify an order for both sets, so we can be confident we're comparing them correctly:
+
+``` ruby
+active_posts = Post.where(state: active).order(:id)
+expected_posts = [post1, post2].sort_by(&:id)
+expect(active_posts).to eq(expected_posts)
+```
+
+#### Identifying unordered collection flakes 
+
+Look for any assertions about: 
+
+* the order of a collection
+* the contents of an array
+* the first or last item in an array
+
+#### Preventing unordered collection flakes
+
+Fixing this type of flake is relatively simple: use `match_array` (RSpec) when you don’t care about order, or add an explicit sort like in the example.
+
+### Suspect #5 (last one!): Randomness
+
+**Definition:** A test that can pass or fail depending on the output of a random number generator.
+
+#### Examples of randomness-based flakes
+
+So here’s an example of a test data factory that uses FactoryBot to create an event:
+
+``` ruby
+factory :event do
+  start_date { Date.current + rand(5) }
+  end_date { Date.current + rand(10) }
+end
+```
+
+The issue is that if we have a validation that enforces start date being before end date, tests using this factory will randomly fail when the value produced by rand(10) is lower than the value produced by rand(5). You’re better off just being explicit and creating the same dates every time:
+
+``` ruby
+factory :event do
+  start_date { Date.current + 5 }
+  end_date { Date.current + 10 }
+end
+```
+
+#### Identifying randomness-based flakes
+
+* Look for use of random number generator - often this is used in factories/fixtures
+* Try to see if you can reliably replicate failure with the same `--seed` option added to the command
+  * In minitest, this should work out of the box because it's the same as Kernel.srand
+  * In RSpec, make sure you’ve set Kernel.srand(config.seed) in spec_helper.rb
+
+#### Preventing randomness-based flakes
+
+* Remove randomness from your tests & instead explicitly test boundaries & edge cases.;
+* Avoid using gems like Faker to generate data in tests: they're great for generating realistic dev data, but in your tests it's more important to have reliable behavior & a clear sense of what's being tested than realistically random data.
+
+### Forming a theory & solving it
+
+Now that we've looked at all of the usual suspects, we can move on to forming an theory and actually solving a flaky test mystery.
+
+#### Strategy tips
+* **Run through each category & look for identifying signs**: if you have no idea where to start, just go through each suspect one by one and try to make a connection to the test you're looking at.
+* **Don’t use trial & error to find a fix - form a strong theory first**: since the feedback loop for testing fixes to a flaky test is typically very slow, it's important not to just throw things at the wall and see what sticks - make sure you understand exactly why the fix you're trying could work.
+* **Do try to find a way to reliably replicate failures to prove your theory**: once you have an idea of how a flake could be happening, it's ok at that point to use some experimentation to prove to yourself that it's the right fix
+* **Consider adding code that will give you more information next time it fails**: if you're at a loss for a theory, trying adding some diagnostic code that will give you more information the next time a test fails.
+* **Try pairing with another developer**: flaky tests are great problems to pair with another developer on - it can keep you from going down too many rabbit holes, and forces you to articulate and test your theories together.
+
+#### Is it ever ok to just delete the test?
+
+You have to accept that if you're writing tests, at some point, inevitably, you're going to deal with flaky ones. You can't just delete any test that starts to flake because you'll end up making significant compromises in the coverage you have for you app. And learning to fix and avoid flaky tests is a skill you can develop over time - one that's worth investing in, even if that means spending two days fixing one instead of just deleting it.
+
+That being said, when I'm dealing with flaky tests, I do like to take a step back to think about the test coverage I have for a feature holistically. What situations do I have coverage for, which ones am I neglecting, and what are the stakes of having the kind of bug that might slip through the cracks in my coverage? If the flaky test is for a very small edge case with low stakes, or something that's actually well covered by other tests, maybe it does make sense to delete it.
+
+And this ties into a bigger picture idea, which is that when we're writing tests, we're always making trade-offs between realism and maintainability. Using automated tests instead of manual QA is itself a trade-off in terms of substituting in a machine to do the testing for us, which is going to behave differently than an actual user. But it's worth it in many situations because we can get results faster and consistently and add tests as we code.  Different types of tests go to different lengths to mimic real life, and generally the most realistic ones are the hardest to keep from getting flaky.
+
+![The test pyramid](/assets/images/posts/test_pyramid.png)
+
+There's an idea of the test pyramid - I think first came up with by Mike Cohn, though there's been many other spins on it since - and here's my spin: You should have a strong foundation of lots of unit tests at the bottom. They're simpler, faster, and less likely to be flaky. And as you go from less realistic to more realistic, you should have fewer of those types of test, because they are going to take more effort to maintain, and the tests themselves are coarser-grained - they're covering more situations. End to end tests, like system and feature tests, are just more likely to become flaky since there's so many more moving parts. So it is wise to keep the number of them in our test suite in balance.
+
+#### Fixing flaky tests as a team
+
+* **Make fixing flaky tests high priority since they affect everyone’s velocity**: Since flaky tests can slow everyone down, and erode everyone's trust in your test suite, they should really be high priority to fix - if you can manage it, the next highest priority under production fires. This needs to be something you talk about as a team, communicate to new hires, and agree that it's worth investing time in.
+* **Make sure someone is assigned to each active flake & responsibility is spread across the whole team**: I recommend making sure you have a specific person assigned to each active flake. That person is in charge of looking for a fix, temporarily disabling the test in prod while they work on it, if it's frequently flaking, reaching out to others for help if they're stuck, and so on. And it's important to make sure this responsibility is spread out among your team - don't let just one person end up being the flake master and everyone else ignores it. If you're already sending your flakes to a bug tracker as I suggested, you can use that as a place to assign who's working on them.
+* **Set a target for your master branch pass rate and track it week over week**: The next thing I'd recommend is setting a target for your master branch pass rate and tracking it week over week - so for example, we want to have builds on our master branch pass 90% of the time. This helps you keep an eye on whether you're progressing towards that goal or not, and course correct if your efforts aren't working.
+
+#### Conclusion
+
+To wrap this all up: if you remember just one thing from this post, I hope it's that flaky tests don't just have to be just an annoying and frustrating problem, or something you try to ignore. Fixing them can be an opportunity to gain a deeper understanding of your tools and your code, and to pretend you're a detective for a little. Hopefully this post has made it easier to do that.
