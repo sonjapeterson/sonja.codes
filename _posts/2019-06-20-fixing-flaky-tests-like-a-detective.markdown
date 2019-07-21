@@ -1,7 +1,7 @@
 ---
 layout: post
 title:  "Fixing Flaky Tests Like a Detective (RailsConf 2019)"
-date:   2016-04-13 18:42:49 -0500
+date:   2019-07-20 18:42:49 -0500
 tags: ["Ruby", "Ruby on Rails", "Testing"]
 image: "/assets/images/posts/flaky_tests.png"
 ---
