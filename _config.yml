@@ -2,7 +2,6 @@
 name: 'Sonja Peterson'
 description: 'Software Engineer'
 meta_description: "Sonja Peterson's software engineering blog"
-baseurl: 
 production_url: http://sonja.codes/
 disqus: 'sonjapeterson'
 cover_image: bc_1.jpg
