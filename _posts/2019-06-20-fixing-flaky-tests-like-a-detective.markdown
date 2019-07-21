@@ -5,9 +5,13 @@ date:   2016-04-13 18:42:49 -0500
 tags: ["Ruby", "Ruby on Rails", "Testing"]
 ---
 
-This spring I spoke at RailsConf about fixing flaky tests, and how reading lots of mystery novels helped me learn how to do it. Here's the video of my talk - if you prefer to read about it instead, I've also adapted it into a blog post below.
+This spring I spoke at RailsConf about fixing flaky tests in Rails, and how reading lots of mystery novels helped me learn how to do it. Here's the video of my talk - if you prefer to read about it instead, I've also adapted it into a blog post below.
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/qTyoMg_rmrQ" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
+<h3>Table of Contents</h3>
+* toc
+{:toc}
 
 ## My first encounter with a flaky test
 
@@ -47,7 +51,7 @@ At the same time that I was figuring this out, I was on kind of mystery novel bi
 
 You start with **gathering evidence**, then you **identify suspects**, **come up with a theory of means and motive**, and then you solve it. Thinking about it that way made fixing flaky tests more enjoyable and it actually became a fun challenge for me instead of a frustrating and tedious problem.
 
-So that's the framework I'm going to use in this talk for explaining how to fix flaky tests. Let's start with step one: gathering evidence.
+So that's the framework I'm going to use to explain how to fix flaky tests. Let's start with step one: gathering evidence.
 
 ## Gathering evidence
 
@@ -64,7 +68,7 @@ A method that I’ve used in the past is to have any time a test fails on your m
 
 When doing that, it’s important to make sure the failures for the same test can generally be grouped together - it might take a little configuration or finessing to get this to work, but it’s really helpful so that you can cross reference between different failures and figure out what they might have in common.
 
-## Narrowing down your suspects
+## Identifying suspects
 
 Now that you have your evidence, you can start looking for suspects. With flaky tests, the nice thing is that there’s basically always the same set of usual suspects to start with, and then you can narrow down from there. Those suspects are:
 
@@ -88,7 +92,7 @@ The reason you’re necessarily dealing with async code and concurrency when you
 * Another thread spun off to run the server for your Rails app
 * A thread in a separate process running the browser, which Capybara interacts with using a driver
 
-#### Async flake examples
+#### Examples
 
 Let’s look at how this plays out in a simple example. Imagine you have a Capybara test that clicks on a Submit Post button, and then checks that a post was created in the database.
 
@@ -183,16 +187,16 @@ Database cleaning in Rails should "just work" and often does, especially if you'
 
 ##### Ways to clear your database state
 
-* Transactional
+* **Transactions**
   * Wrapping your test in a transaction & rolling it back afterwards is generally the fastest way to clear your database, and it's the default for Rails tests 
   * In the past you couldn’t use it with Capybara tests because the test code and test server didn’t share a database connection, but Rails 5 system tests addressed that issue by allowing the test code and test server to have shared access to a database connection during the test
   * This approach still requires you to be careful about a couple of things. Transactions might have slightly different behavior than you see in your actual app - for example, if you have any after_commit hooks set up on your models, they won’t be run.
-* Truncation or deletion
+* **Truncation or deletion**
   * Because of the limitations of transactional cleanup, many Rails test suites use the [database_cleaner](https://github.com/DatabaseCleaner/database_cleaner) gem to clean with either truncation - truncating all tables touched in the test - or deletion, which uses DELETE FROM to delete all records created in a test. 
   * Since truncation and deletion let you run the app just like it normally would — without extra transactions wrapping each test — they’re a little more realistic and that can make them easier to work with. 
   * If you use database_cleaner, you should also make sure you’re running it in an `append_after(:each)` block, not an `after(:each)` block- this ensures it runs after Capybara’s cleanup, which includes waiting for any lingering ajax requests that could affect the state of the database and need to be cleaned up.
 
-#### Order dependency examples
+#### Example
 
 Let's say we're using `database_cleaner` with the truncation strategy:
 
@@ -231,7 +235,7 @@ To be clear, I'm not picking on `database_cleaner` here - I'm just giving an exa
 
 **Definition**: A test that can pass or fail depending on the time of day when it is run.
 
-#### Examples of time-based flakes
+#### Example
 
 Imagine we have this code that runs in a `before(:save)` hook on our Task model. It sets an automatic due date to the next day at the end of the day.
 
@@ -265,7 +269,7 @@ it "should set a default due date" do
 end
 ```
 
-You can also use the Timecop gem when you're testing time sensitive logic. This allows you to freeze time to a specific value, so you always know what time your test is running at. 
+You can also use the [Timecop](https://github.com/travisjeffery/timecop) gem when you're testing time sensitive logic. This allows you to freeze time to a specific value, so you always know what time your test is running at. 
 
 ``` ruby
 it "should set a default due date" do
@@ -293,7 +297,7 @@ If the current time could affect the test, freeze it to a specific value with Ti
 
 **Definition:** A test that can pass or fail depending on the order of a set of items referenced in it.
 
-#### Example: Unordered Collections
+#### Example
 
 Here's an example where we’re querying for some posts in the database and then comparing them to some posts that we expect (maybe created earlier in the test):
 
@@ -325,11 +329,11 @@ Look for any assertions about:
 
 Fixing this type of flake is relatively simple: use `match_array` (RSpec) when you don’t care about order, or add an explicit sort like in the example.
 
-### Suspect #5 (last one!): Randomness
+### Suspect #5: Randomness
 
 **Definition:** A test that can pass or fail depending on the output of a random number generator.
 
-#### Examples of randomness-based flakes
+#### Example
 
 So here’s an example of a test data factory that uses FactoryBot to create an event:
 
