@@ -14,9 +14,11 @@ ga_analytics:
 author:
   name: 'Sonja Peterson'
   image: 'authorimage.jpg'
-  greetings: 'Hi there!'
-  description: "My name is Sonja Peterson. I'm a full stack software engineer based in the Boston, MA area. It's nice to meet you!"
-  bio: "Sonja Peterson is a full stack software engineer based on the Boston, MA area. She enjoys programming in Ruby, Golang, Javascript and Typescript. When she's not programming, you can find her looking for new places to hike and ski around New England." 
+  greetings: "Hi, I'm Sonja!"
+  description: "I'm a full stack software engineer based in the Boston, MA area. It's nice to meet you!"
+  bio: "I’m a full stack software engineer based in the Boston, MA area. Currently, I’m a senior full 
+  stack engineer at Devoted Health. I enjoy programming in Ruby, Golang, Javascript and Typescript. 
+  When I’m not programming, you can find me looking for new places to hike and ski around New England."
 
 # Social links
 twitter: 'SonjaBPeterson'

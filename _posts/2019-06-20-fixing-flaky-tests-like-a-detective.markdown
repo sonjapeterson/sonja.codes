@@ -19,7 +19,12 @@ I want to start out by telling you a story. It was my first year as a software e
 
 A red build on our master branch. The failing test was one of the feature tests for my form. Huh?? It had been working fine for days!
 
-The first time it came up, we all kind of ignored it. Tests failed randomly once in a while.
+The first time it came up, we all kind of ignored it. Tests fail randomly once in a while, and that's fine, right?
+
+<figure style="text-align: center;">
+  <img src="https://media.giphy.com/media/QZkpIdieotn3i/giphy.gif" alt="Ignoring a computer on fire">
+  <figcaption class="caption-text">This is fine.</figcaption>
+</figure>
 
 But then it happened again. And again.
 
@@ -33,6 +38,11 @@ That kind of approach sometimes worked with normal bugs - you could start by usi
 
 And that’s exactly what makes fixing flaky tests so challenging. Trying random fixes and testing them by running the test over and over to see if it fails doesn’t work well and is a very slow feedback loop.
 
+<figure style="text-align: center;">
+  <img src="https://media.giphy.com/media/AVx9avUHC0i9a/giphy.gif" alt="Corgi running in circles">
+  <figcaption class="caption-text">Trying to fix a flaky test with trial and error</figcaption>
+</figure>
+
 We eventually figured out a fix for that flaky test, but not until several different people had tried random fixes that failed and it had sucked up entire days of work.
 
 The other thing I learned around that time is that even just a few flaky tests can really slow down your team. When a test fails without actually signaling something wrong with the test suite, you not only have to re-run all the tests before you’re ready to deploy your code, which slows down the deployment process,
@@ -41,17 +51,23 @@ You also lose some trust in your test suite, and eventually might even start ign
 
 So it’s super important to learn how to fix flaky tests efficiently, and better yet avoid writing them in the first place.
 
-## Discovering a method
+## A better method
 
-For me, the real break through in figuring out how to fix flaky tests was when I came up with a method. 
+For me, the real breakthrough in fixing flaky tests was when I came up with a method to follow. 
 
-Instead of starting with throwing fixes at the wall and seeing what stuck, I **gathered all the information I could** about the flaky test and the times that it had failed. Then, I tried to **fit it into one of the 5 main categories of flaky test** - we’ll talk about what those are in a minute - and based on that, I **came up with a theory** of how it might be happening. Then, I implemented my fix.
+1. I gathered all the information I could find about the flaky test and the times that it had failed. 
+2. I tried to fit it into one of 5 main categories of flaky test (more on those in a moment).
+3. Based on that, I came up with a theory of how it might be happening. 
+4. Then, I implemented my fix.
 
 At the same time that I was figuring this out, I was on kind of mystery novel binge. And it struck me that every time I was working on fixing a flaky test, I felt kind of like a detective solving a mystery. After all, the steps to do that (at least in the novels I read, which are probably very different than real life) are basically:
 
-You start with **gathering evidence**, then you **identify suspects**, **come up with a theory of means and motive**, and then you solve it. Thinking about it that way made fixing flaky tests more enjoyable and it actually became a fun challenge for me instead of a frustrating and tedious problem.
-
-So that's the framework I'm going to use to explain how to fix flaky tests. Let's start with step one: gathering evidence.
+1. You start with gathering evidence.
+2. You identify suspects.
+3. You come up with a theory of means and motive.
+4. And then you solve it!
+   
+Thinking about it that way made fixing flaky tests more enjoyable and it actually became a fun challenge for me instead of a frustrating and tedious problem.
 
 ## Gathering evidence
 
@@ -62,11 +78,9 @@ There are lots of pieces of information that can be helpful to have when you’r
 * How often the test is failing
 * Which tests were run before, in what order
 
-So how can you efficiently get all this information? 
+A method that I’ve used to efficiently collect this information in the past is to have any time a test fails on your master branch automatically sent to a bug tracker with all the metadata you’d need, including a link to the CI build where they failed. I’ve had success doing this with [Rollbar](https://rollbar.com/) in the past, but I’m sure other bug trackers would work as well. 
 
-A method that I’ve used in the past is to have any time a test fails on your master branch - or whatever branch you would not expect to see failures on since tests had to pass before merging any changes - have any failures on that branch automatically sent to a bug tracker with all the metadata you’d need including a link to the build where they failed. I’ve had success doing this with Rollbar in the past, but I’m sure other bug trackers would work as well. 
-
-When doing that, it’s important to make sure the failures for the same test can generally be grouped together - it might take a little configuration or finessing to get this to work, but it’s really helpful so that you can cross reference between different failures and figure out what they might have in common.
+When doing that, it’s important to make sure the failures for the same test can generally be grouped together - it might take a little configuration or finessing to get this to work, but it’s really helpful so that you can cross reference between different occurrences of the same failure and figure out what they might have in common.
 
 ## Identifying suspects
 
@@ -185,7 +199,7 @@ When you're writing tests, each test should start with a "clean" DB - that might
 
 Database cleaning in Rails should "just work" and often does, especially if you're able to use Rails' basic, built in transactional cleaning. But there are so many different ways you might have your Rails test suite configured, and it _is_ possible to do it in such a way that certain gotchas are introduced. So it's important to know how your database cleaner works, when it runs, and if there's anything it's leaving behind - especially if you're dealing with a flaky test that seems to be order dependent.
 
-##### Ways to clear your database state
+#### Ways to clear your database state
 
 * **Transactions**
   * Wrapping your test in a transaction & rolling it back afterwards is generally the fastest way to clear your database, and it's the default for Rails tests 
@@ -371,7 +385,7 @@ Now that we've looked at all of the usual suspects, we can move on to forming an
 
 #### Strategy tips
 * **Run through each category & look for identifying signs**: if you have no idea where to start, just go through each suspect one by one and try to make a connection to the test you're looking at.
-* **Don’t use trial & error to find a fix - form a strong theory first**: since the feedback loop for testing fixes to a flaky test is typically very slow, it's important not to just throw things at the wall and see what sticks - make sure you understand exactly why the fix you're trying could work.
+* **Don’t use trial & error to find a fix - form a strong theory first**: since the feedback loop for testing fixes to a flaky test is typically very slow, it's important not to just guess blindly at solutions - make sure you understand exactly why the fix you're trying could work.
 * **Do try to find a way to reliably replicate failures to prove your theory**: once you have an idea of how a flake could be happening, it's ok at that point to use some experimentation to prove to yourself that it's the right fix
 * **Consider adding code that will give you more information next time it fails**: if you're at a loss for a theory, trying adding some diagnostic code that will give you more information the next time a test fails.
 * **Try pairing with another developer**: flaky tests are great problems to pair with another developer on - it can keep you from going down too many rabbit holes, and forces you to articulate and test your theories together.
