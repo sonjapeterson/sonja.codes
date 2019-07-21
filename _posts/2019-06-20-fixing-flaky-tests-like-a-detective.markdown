@@ -3,6 +3,7 @@ layout: post
 title:  "Fixing Flaky Tests Like a Detective (RailsConf 2019)"
 date:   2016-04-13 18:42:49 -0500
 tags: ["Ruby", "Ruby on Rails", "Testing"]
+image: "/assets/images/posts/flaky_tests.png"
 ---
 
 This spring I spoke at RailsConf about fixing flaky tests in Rails, and how reading lots of mystery novels helped me learn how to do it. Here's the video of my talk - if you prefer to read about it instead, I've also adapted it into a blog post below.
