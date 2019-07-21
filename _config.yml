@@ -2,7 +2,7 @@
 name: 'Sonja Peterson'
 description: 'Software Engineer'
 meta_description: "Sonja Peterson's software engineering blog"
-production_url: http://sonja.codes/
+production_url: https://sonja.codes/
 disqus: 'sonjapeterson'
 cover_image: bc_1.jpg
 # Add your GA Tracking Id
