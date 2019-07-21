@@ -415,4 +415,6 @@ So far this post has focused on fixing individual flaky tests, as an individual 
 
 To wrap this all up: if you remember just one thing from this post, I hope it's that flaky tests don't just have to be just an annoying and frustrating problem, or something you try to ignore. Fixing them can be an opportunity to gain a deeper understanding of your tools and your code, and to pretend you're a detective for a little while. Hopefully this post has made it easier to do that.
 
+<figure style="text-align: center; margin-bottom: 30px">
 <img src="https://media.giphy.com/media/3o7TKT0XDElcmlCeNa/giphy.gif" />
+</figure>
