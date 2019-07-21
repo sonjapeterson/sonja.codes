@@ -3,7 +3,7 @@ name: 'Sonja Peterson'
 description: 'Software Engineer'
 meta_description: "Sonja Peterson's software engineering blog"
 baseurl: 
-production_url: http://sonjapeterson.github.io/
+production_url: http://sonja.codes/
 disqus: 'sonjapeterson'
 cover_image: bc_1.jpg
 # Add your GA Tracking Id
@@ -24,6 +24,9 @@ author:
 twitter: 'SonjaBPeterson'
 github: 'sonjapeterson'
 linkedin: 'petersonsonja'
+
+twitter:
+  username: 'SonjaBPeterson'
 
 # Navigation
 navigation:
