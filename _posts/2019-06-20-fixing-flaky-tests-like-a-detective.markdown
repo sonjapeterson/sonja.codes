@@ -16,7 +16,7 @@ This spring I spoke at RailsConf about fixing flaky tests in Rails, and how read
 
 ## My first encounter with a flaky test
 
-It was my first year as a software engineer, and I’d worked really hard building out a complicated form - my first big frontend feature. I wrote lots of unit and feature tests to make sure I didn’t miss any edge cases. Everything was working great, and we shipped it! But then, a few days later, we had a problem.
+This was back in my first year as a software engineer, and I’d worked really hard building out a complicated form. I wrote lots of unit and feature tests to make sure I didn’t miss any edge cases. Everything was working great, and we shipped it! But then, a few days later, we had a problem.
 
 A red build on our master branch. The failing test was one of the feature tests for my form. Huh?? It had been working fine for days! And on the next test run, it went right back to passing.
 
