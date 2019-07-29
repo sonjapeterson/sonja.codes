@@ -5,8 +5,7 @@ meta_description: "Sonja Peterson's software engineering blog"
 production_url: https://sonja.codes/
 disqus: 'sonjapeterson'
 cover_image: bc_1.jpg
-# Add your GA Tracking Id
-ga_analytics: 
+ga_analytics: UA-144771779-1 
 
 
 # Author
@@ -15,8 +14,7 @@ author:
   image: 'authorimage.jpg'
   greetings: "Hi, I'm Sonja!"
   description: "I'm a full stack software engineer based in the Boston, MA area. It's nice to meet you!"
-  bio: "I’m a full stack software engineer based in the Boston, MA area. Currently, I’m a senior full 
-  stack engineer at Devoted Health. I enjoy programming in Ruby, Golang, Javascript and Typescript. 
+  bio: "I’m a full stack software engineer based in the Boston, MA area, currently working at Devoted Health. I enjoy programming in Ruby, Golang, Javascript and Typescript. 
   When I’m not programming, you can find me looking for new places to hike and ski around New England."
 
 # Social links
